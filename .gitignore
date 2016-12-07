@@ -22,3 +22,6 @@ _testmain.go
 *.exe
 *.test
 *.prof
+wx-robot
+setting.json
+error.log
