@@ -1,24 +1,25 @@
 package main
 
-type echo struct{}
+import "log"
 
-func (e *echo) Do(msg *WxMessage) error {
-	logObj.Info("In `echo` method")
-	cc := string(msg.FromUserName) + currentCommand
-	if msg.HasCommand {
-		go redisPool.Get().Do("DEL", cc)
+type echoCommand struct{}
+
+func (e *echoCommand) Do(msg *WxMessage) error {
+	log.Println("In echo method")
+	if msg.Step == "1" {
+		redisPool.Get().Do("DEL", msg.Key)
 	} else {
 		msg.Content = "I will repeat your next words."
-		go redisPool.Get().Do("SETEX", cc, expireSecond, e.Key())
+		redisPool.Get().Do("SETEX", msg.Key, expireSecond, "1")
 	}
 	msg.Reverse()
 	return nil
 }
 
-func (*echo) Desc() string {
-	return "Repeat your next sentence"
+func (*echoCommand) Desc() string {
+	return "Repeat your next words"
 }
 
-func (*echo) Key() string {
+func (*echoCommand) Key() string {
 	return "@echo"
 }

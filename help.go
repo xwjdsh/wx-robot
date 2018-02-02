@@ -1,11 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
-type help struct{}
+type helpCommand struct{}
 
-func (*help) Do(msg *WxMessage) error {
-	logObj.Info("In `help` method")
+func (*helpCommand) Do(msg *WxMessage) error {
+	log.Println("In help method")
 	msg.Reverse()
 	var content string
 	for key, hd := range hdm {
@@ -15,10 +18,10 @@ func (*help) Do(msg *WxMessage) error {
 	return nil
 }
 
-func (*help) Desc() string {
-	return "Display available interface"
+func (*helpCommand) Desc() string {
+	return "Display available commands"
 }
 
-func (*help) Key() string {
+func (*helpCommand) Key() string {
 	return "@help"
 }

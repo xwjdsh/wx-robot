@@ -1,6 +1,12 @@
 package main
 
-import "github.com/garyburd/redigo/redis"
+import (
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/garyburd/redigo/redis"
+)
 
 type (
 	handler interface {
@@ -12,9 +18,7 @@ type (
 )
 
 const (
-	expireSecond   = 10 * 60
-	currentCommand = "-Command"
-	currentStep    = "-Step"
+	expireSecond = 1 * 60
 )
 
 var (
@@ -22,7 +26,7 @@ var (
 )
 
 func init() {
-	hds := []handler{&echo{}, &help{}}
+	hds := []handler{&echoCommand{}, &helpCommand{}}
 	hdm = handlerMap{}
 	for _, hd := range hds {
 		hdm[hd.Key()] = hd
@@ -30,28 +34,22 @@ func init() {
 }
 
 func handle(msg *WxMessage) error {
-	cc, err := redis.String(redisPool.Get().Do("GET", string(msg.FromUserName)+currentCommand))
+	cs := strings.Split(string(msg.Content), " ")
+	msg.Command = cs[0]
+	msg.Args = cs[1:]
+
+	step, err := redis.String(redisPool.Get().Do("GET", fmt.Sprintf("%s-%s", msg.FromUserName, msg.Command)))
 	if err != nil && err != redis.ErrNil {
-		logObj.Error("Redis `GET` error:", err.Error())
+		log.Println("Redis GET error:", err.Error())
+		return err
 	}
 	if err == nil {
-		msg.HasCommand = true
-		return hdm[cc].Do(msg)
+		msg.Step = step
+		return hdm[msg.Command].Do(msg)
 	}
 
-	if hd, ok := hdm[string(msg.Content)]; ok {
+	if hd, ok := hdm[string(msg.Command)]; ok {
 		return hd.Do(msg)
 	}
 	return robot(msg)
-}
-
-func robot(msg *WxMessage) error {
-	robotResp, err := send(string(msg.Content), string(msg.FromUserName))
-	if err != nil {
-		return err
-	}
-	msg.Reverse()
-	msg.MsgType = cdata("text")
-	msg.Content = cdata(robotResp.Text)
-	return nil
 }

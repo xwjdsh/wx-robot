@@ -5,6 +5,16 @@ import (
 	"time"
 )
 
+type cdata string
+
+func (n cdata) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	return e.EncodeElement(struct {
+		S string `xml:",innerxml"`
+	}{
+		S: "<![CDATA[" + string(n) + "]]>",
+	}, start)
+}
+
 type WxMessage struct {
 	XMLName      xml.Name `xml:"xml"`
 	ToUserName   cdata    `xml:"ToUserName"`
@@ -13,7 +23,10 @@ type WxMessage struct {
 	MsgType      cdata    `xml:"MsgType"`
 	Content      cdata    `xml:"Content"`
 	MsgID        string   `xml:"MsgId"`
-	HasCommand   bool     `xml:"-"`
+	Key          string   `xml:"-"`
+	Command      string   `xml:"-"`
+	Args         []string `xml:"-"`
+	Step         string   `xml:"-"`
 }
 
 func (msg *WxMessage) Reverse() {

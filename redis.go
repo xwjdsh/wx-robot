@@ -13,7 +13,7 @@ func initRedis() {
 		MaxIdle:   80,
 		MaxActive: 1200,
 		Dial: func() (redis.Conn, error) {
-			c, err := redis.Dial("tcp", conf.RedisConn)
+			c, err := redis.Dial("tcp", *redisFlag)
 			if err != nil {
 				return nil, err
 			}

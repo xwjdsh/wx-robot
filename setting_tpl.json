@@ -1,7 +1,0 @@
-{
-	"port":6001,
-	"robotKey":"",
-	"infoLogPath":"",
-	"errLogPath":"error.log",
-	"redis":"localhost:6379"
-}

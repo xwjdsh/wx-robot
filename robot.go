@@ -12,10 +12,21 @@ const (
 	TYPE = "application/json;charset=utf-8"
 )
 
+func robot(msg *WxMessage) error {
+	robotResp, err := send(string(msg.Content), string(msg.FromUserName))
+	if err != nil {
+		return err
+	}
+	msg.Reverse()
+	msg.MsgType = cdata("text")
+	msg.Content = cdata(robotResp.Text)
+	return nil
+}
+
 func send(message, userId string) (*RobotResponse, error) {
 	robotReq := &RobotRequest{
 		Info:   message,
-		Key:    conf.RobotKey,
+		Key:    *robotFlag,
 		UserID: userId,
 	}
 	b, _ := json.Marshal(robotReq)
