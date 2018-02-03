@@ -3,39 +3,34 @@ package main
 import (
 	"bytes"
 	"encoding/xml"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo"
-)
-
-var (
-	portFlag  = flag.Int("p", 3000, "port")
-	robotFlag = flag.String("robot", "", "robot key")
-	redisFlag = flag.String("redis", "localhost:6379", "redis connection")
+	"github.com/labstack/echo-contrib/session"
+	"github.com/xwjdsh/wx-robot/utils"
 )
 
 func main() {
-	initConfig()
-	initRedis()
+	utils.InitConfig()
 	e := echo.New()
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
 	e.POST("/", getMsg)
-	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", *portFlag)))
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", *utils.PortFlag)))
 }
 
 func getMsg(c echo.Context) error {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(c.Request().Body)
 	log.Printf("request: >>>>\n%s\n<<<<", buf.String())
-	msg := &WxMessage{}
+	msg := &utils.WxMessage{}
 	if err := c.Bind(msg); err != nil {
 		log.Println("Read xml error:", err.Error())
 		return err
 	}
-	err := handle(msg)
+	err := handleMsg(msg)
 	if err != nil {
 		log.Println("Handle message error:", err.Error())
 		return c.String(http.StatusOK, "")
@@ -43,14 +38,4 @@ func getMsg(c echo.Context) error {
 	data, _ := xml.MarshalIndent(msg, "", "\t")
 	log.Printf("response: >>>>\n%s\n<<<<", string(data))
 	return c.XML(http.StatusOK, msg)
-}
-
-func initConfig() {
-	flag.Parse()
-	if robot := os.Getenv("ROBOT"); robot != "" {
-		robotFlag = &robot
-	}
-	if redisConn := os.Getenv("REDIS"); redisConn != "" {
-		redisFlag = &redisConn
-	}
 }
